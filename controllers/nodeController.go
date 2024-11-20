@@ -5,6 +5,7 @@ import (
 	"node_management_application/config"
 	"node_management_application/models"
 	"node_management_application/services"
+	"node_management_application/utils"
 	"time"
 
 	"github.com/kataras/iris/v12"
@@ -32,6 +33,12 @@ func CreateNode(ctx iris.Context) {
 	if err := ctx.ReadJSON(&node); err != nil {
 		ctx.StatusCode(iris.StatusBadRequest)
 		ctx.JSON(iris.Map{"error": "Invalid request body"})
+		return
+	}
+
+	// Validate node data
+	if err := services.ValidateNodeData(node.Name, node.IP, node.Port); err != nil {
+		utils.ValidationErrorResponse(ctx, err)
 		return
 	}
 
@@ -68,8 +75,11 @@ func UpdateNode(ctx iris.Context) {
 		Location string `json:"location"`
 	}
 	if err := ctx.ReadJSON(&updatedData); err != nil {
-		ctx.StatusCode(iris.StatusBadRequest)
-		ctx.JSON(iris.Map{"error": "Invalid request body"})
+		utils.ValidationErrorResponse(ctx, err)
+		return
+	}
+	if err := services.ValidateNodeData(updatedData.Name, updatedData.IP, updatedData.Port); err != nil {
+		utils.ValidationErrorResponse(ctx, err)
 		return
 	}
 
@@ -196,7 +206,12 @@ func StopNode(ctx iris.Context) {
 	}
 
 	// Stop the node using the service
-	services.StopNodeService(node)
+	err = services.StopNodeService(node)
+	if err != nil {
+		ctx.StatusCode(http.StatusInternalServerError)
+		ctx.JSON(iris.Map{"error": "Failed to stop the node"})
+		return
+	}
 
 	// Update status and health status in the database
 	err = models.UpdateNodeStatusAndHealth(nodeID, "Stopped", "Unhealthy", time.Now())
