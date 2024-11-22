@@ -2,12 +2,10 @@ package controllers
 
 import (
 	"net/http"
-	"time"
 
 	"node_management_application/config"
 	"node_management_application/models"
 
-	"github.com/dgrijalva/jwt-go"
 	"github.com/kataras/iris/v12"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -54,26 +52,26 @@ func RegisterUser(ctx iris.Context) {
 		return
 	}
 
-	// Generate JWT token
-	expirationTime := time.Now().Add(24 * time.Hour)
-	claims := &UserClaims{
-		UserID: newUser.ID,
-		Email:  newUser.Email,
-		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: expirationTime.Unix(),
-		},
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString(config.JWTSecretKey)
-	if err != nil {
-		ctx.StatusCode(http.StatusInternalServerError)
-		ctx.JSON(iris.Map{"error": "Failed to generate token"})
-		return
-	}
+	// // Generate JWT token
+	// expirationTime := time.Now().Add(24 * time.Hour)
+	// claims := &UserClaims{
+	// 	UserID: newUser.ID,
+	// 	Email:  newUser.Email,
+	// 	StandardClaims: jwt.StandardClaims{
+	// 		ExpiresAt: expirationTime.Unix(),
+	// 	},
+	// }
+	// token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	// tokenString, err := token.SignedString(config.JWTSecretKey)
+	// if err != nil {
+	// 	ctx.StatusCode(http.StatusInternalServerError)
+	// 	ctx.JSON(iris.Map{"error": "Failed to generate token"})
+	// 	return
+	// }
 
 	// Respond with the user and token
 	ctx.JSON(iris.Map{
 		"user":  newUser,
-		"token": tokenString,
+		// "token": tokenString,
 	})
 }

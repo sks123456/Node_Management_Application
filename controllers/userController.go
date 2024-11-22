@@ -5,6 +5,7 @@ import (
 	"node_management_application/models"
 
 	"github.com/kataras/iris/v12"
+	"gorm.io/gorm"
 )
 
 func GetUsers(ctx iris.Context) {
@@ -17,6 +18,36 @@ func GetUsers(ctx iris.Context) {
 	}
 	ctx.JSON(users)
 }
+
+func GetUserProfile(ctx iris.Context) {
+    // Get the user ID from the context (assumes it's set by authentication middleware)
+    userID := ctx.Values().GetUintDefault("user_id", 0)
+
+    if userID == 0 {
+        ctx.StatusCode(iris.StatusBadRequest)
+        ctx.JSON(iris.Map{"error": "User ID is missing"})
+        return
+    }
+
+    var user models.User
+
+    // Find the user by userID
+    result := config.DB.First(&user, userID) // This fetches the first matching user
+    if result.Error != nil {
+        if result.Error == gorm.ErrRecordNotFound {
+            ctx.StatusCode(iris.StatusNotFound)
+            ctx.JSON(iris.Map{"error": "User not found"})
+        } else {
+            ctx.StatusCode(iris.StatusInternalServerError)
+            ctx.JSON(iris.Map{"error": result.Error.Error()})
+        }
+        return
+    }
+
+    // Return the user details in the response
+    ctx.JSON(user)
+}
+
 
 func CreateUser(ctx iris.Context) {
 	var user models.User

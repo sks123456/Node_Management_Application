@@ -2,6 +2,7 @@ package middlewares
 
 import (
 	"net/http"
+	"strings"
 
 	"node_management_application/config"
 
@@ -9,7 +10,7 @@ import (
 	"github.com/kataras/iris/v12"
 )
 
-// UserClaims defines the structure of the JWT payload (reuse from the controllers package if already defined)
+// UserClaims defines the structure of the JWT payload
 type UserClaims struct {
 	UserID uint   `json:"user_id"`
 	Email  string `json:"email"`
@@ -19,12 +20,22 @@ type UserClaims struct {
 // Authenticate is the JWT middleware to validate tokens
 func Authenticate(ctx iris.Context) {
 	// Extract the token from the Authorization header
-	tokenString := ctx.GetHeader("Authorization")
-	if tokenString == "" {
+	authHeader := ctx.GetHeader("Authorization")
+	if authHeader == "" {
 		ctx.StatusCode(http.StatusUnauthorized)
 		ctx.JSON(iris.Map{"error": "Authorization token required"})
 		return
 	}
+
+	// Check if the Authorization header has the "Bearer " prefix
+	if !strings.HasPrefix(authHeader, "Bearer ") {
+		ctx.StatusCode(http.StatusUnauthorized)
+		ctx.JSON(iris.Map{"error": "Invalid Authorization format"})
+		return
+	}
+
+	// Remove the "Bearer " prefix
+	tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 
 	// Parse and validate the token
 	claims := &UserClaims{}

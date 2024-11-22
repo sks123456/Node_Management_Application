@@ -25,13 +25,14 @@ func RegisterRoutes(app *iris.Application) {
 
 
 	 // User routes
-     userAPI := app.Party("/users")
+     userAPI := app.Party("/users",middlewares.Authenticate)
      {
         userAPI.Get("/", controllers.GetUsers)
         // userAPI.Post("/", controllers.CreateUser)
         userAPI.Put("/{id:uint}", controllers.UpdateUser)   // Update user
         userAPI.Delete("/{id:uint}", controllers.DeleteUser) // Delete user
-        userAPI.Get("/{userId:uint}/nodes", controllers.GetUserNodes) // Get User nodes
+        // userAPI.Get("/{userId:uint}/nodes", controllers.GetUserNodes) // Get User nodes
+        userAPI.Get("/profile", controllers.GetUserProfile)
 
      }
  
