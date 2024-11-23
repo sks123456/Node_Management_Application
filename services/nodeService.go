@@ -33,7 +33,7 @@ func StartNodeConcurrently(node *models.Node) error {
 		return fmt.Errorf("port %d on IP %s is already in use", node.Port, node.IP)
 	}
 
-	// Start the node server
+	// Create an HTTP server for the node
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "Node %s is running at %s:%d", node.Name, node.IP, node.Port)
@@ -44,16 +44,23 @@ func StartNodeConcurrently(node *models.Node) error {
 		Handler: mux,
 	}
 
+	// Track the server in the store
+	serverStore.Store(node.ID, server)
+
+	// Start the server in a goroutine
 	go func() {
 		log.Printf("Starting node server: %s:%d", node.IP, node.Port)
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Printf("Node server %s:%d stopped with error: %v", node.IP, node.Port, err)
+			// Clean up on failure
+			serverStore.Delete(node.ID)
 		}
 	}()
 
 	return nil
 }
-//stop Node Service
+
+// StopNodeService stops a running node server
 func StopNodeService(node *models.Node) error {
 	value, ok := serverStore.Load(node.ID)
 	if !ok {
@@ -73,21 +80,36 @@ func StopNodeService(node *models.Node) error {
 		return fmt.Errorf("failed to shutdown server for node ID %d: %v", node.ID, err)
 	}
 
-	// Remove the server from the store
+	// Remove the server from the store and release the IP:Port lock
 	serverStore.Delete(node.ID)
+	ipPortLocks.Delete(fmt.Sprintf("%s:%d", node.IP, node.Port))
 	return nil
 }
-
 
 // isPortAvailable checks if a port is available on the given IP
 func isPortAvailable(ip string, port int) bool {
 	address := fmt.Sprintf("%s:%d", ip, port)
-	conn, err := net.Listen("tcp", address)
+	listener, err := net.Listen("tcp", address)
 	if err != nil {
-		return false // Port is already in use
+		log.Printf("Port check failed for %s: %v", address, err)
+		return false // Port is already in use or permission denied
 	}
-	conn.Close()
+	defer listener.Close()
 	return true
 }
 
+func StopAllNodes() {
+	serverStore.Range(func(key, value interface{}) bool {
+		server := value.(*http.Server)
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
 
+		if err := server.Shutdown(ctx); err != nil {
+			log.Printf("Failed to shutdown server %s: %v", server.Addr, err)
+		} else {
+			log.Printf("Server %s stopped successfully", server.Addr)
+		}
+		serverStore.Delete(key)
+		return true
+	})
+}

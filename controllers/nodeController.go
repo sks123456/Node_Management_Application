@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -196,7 +197,7 @@ func StopNode(ctx iris.Context) {
 	err := services.StopNodeService(&node)
 	if err != nil {
 		ctx.StatusCode(http.StatusInternalServerError)
-		ctx.JSON(iris.Map{"error": "Failed to stop the node"})
+		ctx.JSON(iris.Map{"error": err.Error()})
 		return
 	}
 
@@ -224,28 +225,24 @@ func HealthCheck(ctx iris.Context) {
 	// Fetch node by ID and ensure it belongs to the authenticated user
 	var node models.Node
 	if result := config.DB.Where("id = ? AND user_id = ?", nodeID, userID).First(&node); result.Error != nil {
-		ctx.StatusCode(http.StatusNotFound)
+		ctx.StatusCode(iris.StatusNotFound)
 		ctx.JSON(iris.Map{"error": "Node not found or access denied"})
 		return
 	}
 
 	// Perform the health check
-	status, err := services.PerformHealthCheckConcurrently(&node)
+	err := services.PerformHealthCheckConcurrently(&node)
 	if err != nil {
-		ctx.StatusCode(http.StatusInternalServerError)
-		ctx.JSON(iris.Map{"error": err.Error()})
+		ctx.StatusCode(iris.StatusInternalServerError)
+		ctx.JSON(iris.Map{"error": fmt.Sprintf("Health check failed for node %s: %v", node.Name, err)})
 		return
 	}
 
-	// Update health status in the database
-	if result := config.DB.Model(&node).Updates(map[string]interface{}{
-		"health_status": status,
-		"last_checked":  time.Now(),
-	}); result.Error != nil {
-		ctx.StatusCode(http.StatusInternalServerError)
-		ctx.JSON(iris.Map{"error": "Failed to update health status"})
-		return
-	}
-
-	ctx.JSON(iris.Map{"node_id": node.ID, "health_status": status})
+	// Respond with the updated health status
+	ctx.JSON(iris.Map{
+		"node_id":       node.ID,
+		"health_status": node.HealthStatus,
+		"last_checked":  node.LastChecked,
+	})
 }
+
