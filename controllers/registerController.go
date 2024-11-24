@@ -52,26 +52,8 @@ func RegisterUser(ctx iris.Context) {
 		return
 	}
 
-	// // Generate JWT token
-	// expirationTime := time.Now().Add(24 * time.Hour)
-	// claims := &UserClaims{
-	// 	UserID: newUser.ID,
-	// 	Email:  newUser.Email,
-	// 	StandardClaims: jwt.StandardClaims{
-	// 		ExpiresAt: expirationTime.Unix(),
-	// 	},
-	// }
-	// token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	// tokenString, err := token.SignedString(config.JWTSecretKey)
-	// if err != nil {
-	// 	ctx.StatusCode(http.StatusInternalServerError)
-	// 	ctx.JSON(iris.Map{"error": "Failed to generate token"})
-	// 	return
-	// }
-
-	// Respond with the user and token
+	// Respond with the user detail created
 	ctx.JSON(iris.Map{
 		"user":  newUser,
-		// "token": tokenString,
 	})
 }

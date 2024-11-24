@@ -2,7 +2,6 @@ package services
 
 import (
 	"log"
-	"net"
 	"node_management_application/config"
 	"node_management_application/models"
 	"time"
@@ -31,14 +30,4 @@ func MonitorNodeHealth(shutdown chan struct{}) {
 			}
 		}
 	}
-}
-
-
-func isNodeReachable(ip string, port int) bool {
-    conn, err := net.DialTimeout("tcp", net.JoinHostPort(ip, string(port)), 3*time.Second)
-    if err != nil {
-        return false
-    }
-    conn.Close()
-    return true
 }

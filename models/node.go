@@ -31,22 +31,3 @@ func GetNodeByID(id uint) (*Node, error) {
 	}
 	return &node, nil
 }
-
-func UpdateNodeStatus(id uint, status string) error {
-	return config.DB.Model(&Node{}).Where("id = ?", id).Update("status", status).Error
-}
-
-func UpdateNodeHealthStatus(id uint, healthStatus string, lastChecked time.Time) error {
-	return config.DB.Model(&Node{}).Where("id = ?", id).Updates(map[string]interface{}{
-		"health_status": healthStatus,
-		"last_checked":  lastChecked,
-	}).Error
-}
-
-func UpdateNodeStatusAndHealth(id uint, status string, healthStatus string, lastChecked time.Time) error {
-	return config.DB.Model(&Node{}).Where("id = ?", id).Updates(map[string]interface{}{
-		"status":        status,
-		"health_status": healthStatus,
-		"last_checked":  lastChecked,
-	}).Error
-}
