@@ -6,6 +6,7 @@ import (
 	"net"
 	"node_management_application/config"
 	"node_management_application/models"
+	"node_management_application/websocket"
 	"sync"
 	"time"
 )
@@ -35,6 +36,9 @@ func PerformHealthCheckConcurrently(node *models.Node) error {
 		return fmt.Errorf("database error: %v", dbErr)
 	}
 
+	// Broadcast the health update to WebSocket clients
+	websocket.BroadcastHealthStatus(node.ID, status)
+	
 	if err != nil {
 		log.Printf("Health check failed for node %s (%s:%d): %v", node.Name, node.IP, node.Port, err)
 		return fmt.Errorf("health check failed: %v", err)

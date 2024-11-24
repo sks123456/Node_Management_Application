@@ -61,6 +61,10 @@ func startServer() *iris.Application {
 	log.Println("Registering routes...")
 	routes.RegisterRoutes(app)
 
+	// Register WebSocket route
+	log.Println("Registering WebSocket route...")
+	routes.RegisterWebSocketRoute(app)
+	
 	// Start the server in a goroutine
 	go func() {
 		if err := app.Listen(":8080"); err != nil {
